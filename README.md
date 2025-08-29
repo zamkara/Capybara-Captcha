@@ -1,26 +1,46 @@
 # Capybara
-## A Flexible, Lightning-Quick & Serverless CAPTCHA
+<p>A Flexible, Lightning-Quick & Serverless CAPTCHA</p>
 
-Self-hosted, KV-backed CAPTCHA API with flexible UI, difficulty, duration, and IP limiting.
-
-This Worker lets you run the Capybara CAPTCHA API under your own Cloudflare account without access to the original source code. By default, the Worker runs in standalone mode and stores all CAPTCHA state in your own KV (`CAPY_KV`). Users or apps integrate against your Worker’s public URL (e.g., `https://capybara.yourname.workers.dev` or a custom domain).
-
----
+Capybara is a **minimal, serverless CAPTCHA** for modern apps.  
+It’s **fast, lightweight, and privacy-friendly**, powered by **Cloudflare Workers + KV**.  
+Instead of tracking users, Capybara uses a **SHA-256 proof-of-work challenge** to keep bots out without friction.  
 
 ## What You Get
 
 - Same API shape as the main Worker: `/api/challenge`, `/api/challenge/:id`, `/api/verify`, `/dev`
 - Your own KV namespace (`CAPY_KV`) to store per-IP limits and challenge data
-- Your own configuration (redirect, difficulty/duration defaults and bounds, per-IP daily limit, instance ID)
-- Isolation: compute and KV usage are billed to your account
+- Customizable configuration (redirect URL, default difficulty, duration, limits, instance ID)
+- Complete isolation: compute and KV usage are billed to your Cloudflare account
+
+| CAPTCHA           | Open-source | Free | Private | Fast to solve | Easy for humans | Small error rate | Checkpoint support | Widget support | GDPR/CCPA Compliant | Customizable | Hard for bots | Easy to integrate |
+|-------------------|-------------|------|---------|---------------|-----------------|------------------|--------------------|----------------|----------------------|--------------|---------------|-------------------|
+| **Capybara**      | ✅          | ✅   | ✅      | ✅            | ✅              | ✅               | ❌                 | 🟨             | ✅                   | ✅           | 🟨            | ✅                |
+| Cap               | ✅          | ✅   | ✅      | ✅            | ✅              | ✅               | ✅                 | ✅             | ✅                   | ✅           | 🟨            | ✅                |
+| Cloudflare Turnstile | ❌       | ✅   | 🟨      | 🟨            | ✅              | ❌               | 🟨                 | ✅             | ✅                   | ❌           | 🟨            | ✅                |
+| reCAPTCHA         | ❌          | 🟨   | ❌      | ✅            | ❌              | 🟨               | ❌                 | ✅             | 🟨                   | ❌           | ❌            | ✅                |
+| hCAPTCHA          | ❌          | 🟨   | 🟨      | ❌            | ❌              | 🟨               | ❌                 | ✅             | 🟨                   | ❌           | 🟨            | ✅                |
+| Altcha            | ✅          | ✅   | ✅      | ✅            | ✅              | ✅               | ❌                 | ✅             | ✅                   | ✅           | 🟨            | 🟨                |
+| FriendlyCaptcha   | ❌          | ❌   | ✅      | 🟨            | ✅              | ✅               | ❌                 | ✅             | ✅                   | ✅           | 🟨            | 🟨                |
+| MTCaptcha         | ❌          | 🟨   | 🟨      | ❌            | ❌              | 🟨               | ❌                 | ✅             | ✅                   | ❌           | ❌            | 🟨                |
+| GeeTest           | ❌          | ❌   | ❌      | 🟨            | 🟨              | 🟨               | ❌                 | ✅             | ✅                   | ❌           | 🟨            | 🟨                |
+| Arkose Labs       | ❌          | ❌   | ❌      | ❌            | ❌              | ❌               | ❌                 | ❌             | ✅                   | 🟨           | ❌            | ❌                |
 
 ---
 
 ## Quick Start
 
+You can deploy instantly to Cloudflare Workers by clicking the button below.  
+This method automatically configures the required KV namespace and deployment settings.
+
 [![Deploy Worker](https://raw.githubusercontent.com/almaheras/blackhole/refs/heads/main/Property%201%3DWorker%20Light.svg)](https://deploy.workers.cloudflare.com/?url=https://github.com/zamkara/capybara_captcha)
 
-### 0. Install & Prepare Wrangler (Local Development)
+---
+
+## Manual Setup (Local Development)
+
+If you prefer running and testing locally before deploying, follow these steps:
+
+### 0. Install & Prepare Wrangler
 ```bash
 wrangler kv namespace create "CAPY_KV"
 wrangler kv namespace create "CAPY_KV --preview"
@@ -35,12 +55,12 @@ cd capybara
 
 ### 2. Copy Templates
 
-* `worker.js` (single-file Worker, Standalone)
-* `wrangler.jsonc` (fill your KV `id`/`preview_id`)
+* `worker.js` (single-file Worker, standalone mode)
+* `wrangler.jsonc` (fill in your KV `id`/`preview_id`)
 
-### 3. Edit `wrangler.jsonc` Variables
+### 3. Configure `wrangler.jsonc`
 
-* `REDIRECT_URL` (landing page when visiting `/`)
+* `REDIRECT_URL`: redirect target for `/`
 * Limits: `DEFAULT_DIFFICULTY`, `MIN_DIFFICULTY`, `MAX_DIFFICULTY`, `DEFAULT_DURATION_SEC`, `MIN_DURATION_SEC`, `MAX_DURATION_SEC`, `LIMIT_MAX_CHALLENGES_PER_DAY`
 * Namespacing: `KV_PREFIX_BASE`, `INSTANCE_ID`
 
@@ -58,8 +78,8 @@ wrangler deploy --config wrangler.jsonc
 
 ### 6. Confirm Public URL
 
-* Example: `https://capybara.yourname.workers.dev`
-* This is the base URL for your websites/apps
+Example:
+`https://capybara.yourname.workers.dev`
 
 ---
 
@@ -68,9 +88,9 @@ wrangler deploy --config wrangler.jsonc
 * Base URL example: `https://capybara.yourname.workers.dev`
 * API endpoints:
 
-  * POST `${BASE_URL}/api/challenge` (optional JSON `{ difficulty, duration }`)
-  * GET `${BASE_URL}/api/challenge/:id`
-  * POST `${BASE_URL}/api/verify` (JSON `{ id, solution }`)
+  * `POST ${BASE_URL}/api/challenge` (optional JSON `{ difficulty, duration }`)
+  * `GET ${BASE_URL}/api/challenge/:id`
+  * `POST ${BASE_URL}/api/verify` (JSON `{ id, solution }`)
 
 ### Minimal HTML Integration
 
@@ -142,54 +162,39 @@ btn.onclick=async()=>{
 </html>
 ```
 
-**Notes**
-
-* Solver is a demo; production UIs should provide progress indicator, cancellation, etc.
-* Public URL can be custom domain attached to the Worker
-
 ---
 
 ## Internals: How the Worker Works
 
-* Validates inputs and applies per-IP daily limits using KV (`CAPY_KV`)
-* Creates, stores, reads, and verifies challenges entirely from KV
-* All keys are namespaced by `KV_PREFIX_BASE` and `INSTANCE_ID` to avoid collisions
+* Validates inputs and enforces per-IP daily limits using KV (`CAPY_KV`)
+* Creates, stores, retrieves, and verifies challenges entirely from KV
+* All keys are namespaced with `KV_PREFIX_BASE` and `INSTANCE_ID` to avoid collisions
 
 ---
 
 ## Configuration Options
 
-* `REDIRECT_URL`: where `/` redirects
+* `REDIRECT_URL`: redirect target for `/`
 * `DEFAULT_DIFFICULTY`, `MIN_DIFFICULTY`, `MAX_DIFFICULTY`
 * `DEFAULT_DURATION_SEC`, `MIN_DURATION_SEC`, `MAX_DURATION_SEC`
 * `LIMIT_MAX_CHALLENGES_PER_DAY`: per-IP daily challenge cap
-* `KV_PREFIX_BASE`, `INSTANCE_ID`: KV namespacing for multi-instance isolation
-
----
-
-## Local Development
-
-```bash
-wrangler dev --local --port 8789 --config wrangler.jsonc | cat
-```
-
-Or copy `worker.js` and adjust `wrangler.jsonc`.
+* `KV_PREFIX_BASE`, `INSTANCE_ID`: namespacing for multi-instance isolation
 
 ---
 
 ## Troubleshooting
 
-* 404 on `/api/*`: ensure public URL and paths match
-* Redirect goes to wrong site: set `REDIRECT_URL` correctly
-* Rate limit not working: ensure `CAPY_KV` exists and `LIMIT_MAX_CHALLENGES_PER_DAY` > 0
+* **404 on `/api/*`**: ensure public URL and path are correct
+* **Redirect goes to wrong site**: set `REDIRECT_URL` properly
+* **Rate limit not working**: verify `CAPY_KV` is configured and `LIMIT_MAX_CHALLENGES_PER_DAY` > 0
 
 ---
 
 ## FAQ
 
-* **Upstream dependent?** No, standalone and writes to KV
-* **Multiple deployments?** Yes, use unique `INSTANCE_ID`
-* **Need original source code?** No, single-file Worker stores all state in KV
+* **Dependent on upstream?** No, runs standalone with KV storage
+* **Multiple deployments possible?** Yes, set unique `INSTANCE_ID`
+* **Need the original source code?** No, Worker is self-contained and KV-backed
 
 ---
 
@@ -214,13 +219,6 @@ https://capybara.yourname.workers.dev
 Per-IP Limit      Generate/Verify
 Storage            Challenge Data
 ```
-
-* Website/App calls Worker public URL
-* Worker reads/writes KV (`CAPY_KV`) for:
-
-  * Per-IP daily limits
-  * Challenge creation & verification
-* Keys namespaced by `KV_PREFIX_BASE` + `INSTANCE_ID` to avoid collisions
 
 ### Challenge Lifecycle
 
@@ -273,6 +271,11 @@ Value: {
   createdAt: timestamp
 }
 ```
+
+* `{KV_PREFIX_BASE}`: configurable prefix for multi-instance isolation
+* `{INSTANCE_ID}`: unique deployment ID
+* `IP:{ip_address}`: per-IP tracking
+* `CH:{challenge_id}`: stores challenge data
 
 * `{KV_PREFIX_BASE}`: configurable prefix for multi-instance isolation
 * `{INSTANCE_ID}`: unique deployment ID
