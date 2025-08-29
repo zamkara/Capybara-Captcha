@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+</head>
+<body>
+<h1>Capybara Captcha Demo</h1>
+<button id="start">Start CAPTCHA</button>
+<pre id="log">Click button to start...</pre>
+
+<script>
+const BASE_URL='https://capybara.yourname.workers.dev';
+
+async function sha256(s){
+  const h=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+function hasZeros(hex,n){ return hex.slice(0,n)==='0'.repeat(n); }
+
+const btn=document.getElementById('start');
+const log=document.getElementById('log');
+
+btn.onclick=async()=>{
+  btn.disabled=true;
+  log.textContent="Fetching challenge...\n";
+  let ch;
+  try{
+    const res=await fetch(BASE_URL+'/api/challenge',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({difficulty:3,duration:30})
+    });
+    ch=(await res.json()).challenge;
+    log.textContent+="Challenge from server:\n"+JSON.stringify(ch,null,2)+"\n";
+  }catch{
+    ch={id:'dummy',nonce:'salt123',difficulty:3};
+    log.textContent+="Using dummy challenge\n";
+  }
+
+  log.textContent+="Solving PoW...\n";
+  let sol=0,h='';
+  while(true){
+    h=await sha256(ch.nonce+sol);
+    if(hasZeros(h,ch.difficulty)) break;
+    sol++;
+  }
+  log.textContent+="Solution: "+sol+"\nHash: "+h+"\nSubmitting...\n";
+
+  try{
+    const r=await fetch(BASE_URL+'/api/verify',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({id:ch.id,solution:String(sol)})
+    });
+    const res=r.ok?await r.json():{success:true,token:'dummy_token'};
+    log.textContent+="Result:\n"+JSON.stringify(res,null,2);
+  }catch{
+    log.textContent+="Verification failed, using dummy token\n"+JSON.stringify({success:true,token:'dummy_token'},null,2);
+  }
+  btn.disabled=false;
+};
+</script>
+</body>
+</html>
