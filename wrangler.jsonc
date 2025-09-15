@@ -1,0 +1,26 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "capybaracaptcha",
+	"main": "worker.js",
+	"compatibility_date": "2025-08-26",
+	"vars": {
+		"REDIRECT_URL": "https://vault.zamkara.tech",
+		"DEFAULT_DIFFICULTY": 3,
+		"MIN_DIFFICULTY": 1,
+		"MAX_DIFFICULTY": 6,
+		"DEFAULT_DURATION_SEC": 30,
+		"MIN_DURATION_SEC": 15,
+		"MAX_DURATION_SEC": 300,
+		"LIMIT_MAX_CHALLENGES_PER_DAY": 2,
+		"KV_PREFIX_BASE": "capybara_captcha",
+		"INSTANCE_ID": "CAPY25"
+	},
+	"kv_namespaces": [
+		{
+			"binding": "CAPY_GUEST_KV",
+			"id": "REPLACE_WITH_ID",
+			"preview_id": "REPLACE_WITH_PREVIEW_ID"
+		}
+	],
+	"observability": { "enabled": true }
+}
